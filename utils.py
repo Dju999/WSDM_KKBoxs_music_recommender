@@ -87,3 +87,13 @@ def df2matrix(df, row_label, col_label, feedback_label, shape=None):
         shape=shape
     ).astype(np.int8)
     return ui_matrix.tocsr()
+
+
+def isrc_to_year(isrc):
+    if type(isrc) == str:
+        if int(isrc[5:7]) > 17:
+            return 1900 + int(isrc[5:7])
+        else:
+            return 2000 + int(isrc[5:7])
+    else:
+        return np.nan

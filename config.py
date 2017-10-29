@@ -6,6 +6,9 @@ WORKING_DIR = os.path.join(PARENT_DIR, 'output')
 
 TRAIN_CSV_GZ = os.path.join(PARENT_DIR, 'train.csv.gz')
 TEST_CSV_GZ = os.path.join(PARENT_DIR, 'test.csv.gz')
+SONGS_CSV_GZ = os.path.join(PARENT_DIR, 'songs.csv.gz')
+MEMBERS_CSV_GZ = os.path.join(PARENT_DIR, 'members.csv.gz')
+SONGS_EXTRA_INFO_CSV_GZ = os.path.join(PARENT_DIR, 'song_extra_info.csv.gz')
 
 TRAIN_MATRIX = os.path.join(WORKING_DIR, 'train.mtx')
 VALID_MATRIX = os.path.join(WORKING_DIR, 'valid.mtx')
@@ -27,4 +30,5 @@ COL_NAMES = os.path.join(WORKING_DIR, 'col_names.pkl')
 
 ENCODERS = os.path.join(WORKING_DIR, 'encoders.pkl')
 
-FM_SUBMIT = os.path.join(WORKING_DIR, 'submit.csv')
+FM_SUBMIT = os.path.join(WORKING_DIR, 'fm_submission.csv.gz')
+LGBM_SUBMIT = os.path.join(WORKING_DIR, 'lgbm_submission.csv.gz')
