@@ -129,11 +129,11 @@ class FeatureEncoder:
 
 if __name__ == '__main__':
     test_df = None
-    if True:#len(os.listdir(args.matrix_directory))==0:
+    if len(os.listdir(config.WORKING_DIR)) == 0:
         logger.info("Loading input train_csv, test_csv...")
         train_df = pd.read_csv(config.TRAIN_CSV_GZ, compression='gzip')
         test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip')
-        col_names = [col for col in train_df.columns.append(test_df.columns) if col not in ('target', 'id')]
+        col_names = np.unique([col for col in train_df.columns.append(test_df.columns) if col not in ('target', 'id')])
         pickle.dump(col_names, open(config.COL_NAMES, "wb"), protocol=3)
 
         logger.info(
@@ -194,27 +194,32 @@ if __name__ == '__main__':
     )
 
     y_train = np.array([-1 if i == 0 else 1 for i in train_target_values])
-    y_train.min()
 
-    rank = [2, 4, 8, 10, 12, 16, 24, 30, 32, 40, 50, 60, 64]
-
-    best_score = 0
     best_model = None
-    for r in rank:
-        model = sgd.FMClassification(
-            n_iter=1000, init_stdev=0.1, l2_reg_w=0,
-            l2_reg_V=0, rank=r, step_size=0.1, random_state=42
-        )
-        model.fit(train_matrix, y_train)
+    if config.USE_PREDTRAINED_FM:
+        best_model = pickle.load(gzip.open('{}.gz'.format(config.FM_MODEL), 'rb'))
+    else:
+        rank = [2, 4, 8, 10, 12, 16, 24, 30, 32, 40, 50, 60, 64]
 
-        y_hat = model.predict_proba(valid_matrix)
-        score = roc_auc_score(valid_target_values, y_hat)
-        best_model = model if score > best_score else best_model
+        best_score = 0
+        for r in rank:
+            model = sgd.FMClassification(
+                n_iter=1000, init_stdev=0.1, l2_reg_w=0,
+                l2_reg_V=0, rank=r, step_size=0.1, random_state=42
+            )
+            model.fit(train_matrix, y_train)
 
-        logger.info("r={}\tROC AUC = {}".format(r, score))
+            y_hat = model.predict_proba(valid_matrix)
+            score = roc_auc_score(valid_target_values, y_hat)
+            best_model = model if score > best_score else best_model
 
-    logger.info('Сохраняем обученную модель (лучшую)...')
-    pickle.dump(best_model, open(config.FM_MODEL, "wb"), protocol=3)
+            logger.info("r={}\tROC AUC = {}".format(r, score))
+
+        logger.info('Сохраняем обученную модель (лучшую)...')
+        pickle.dump(best_model, open(config.FM_MODEL, "wb"), protocol=3)
+        with open(config.FM_MODEL, 'rb') as f_in, gzip.open('{}.gz'.format(config.FM_MODEL), 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+            os.remove(config.FM_MODEL)
 
     logger.info('Building test set...')
     test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip') if test_df is None else test_df

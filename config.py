@@ -1,6 +1,6 @@
 import os
 
-PARENT_DIR = '/media/adzhumurat/ubuntu_files/input'
+PARENT_DIR = '/home/alex/Загрузки/input/'
 
 WORKING_DIR = os.path.join(PARENT_DIR, 'output')
 
@@ -32,3 +32,5 @@ ENCODERS = os.path.join(WORKING_DIR, 'encoders.pkl')
 
 FM_SUBMIT = os.path.join(WORKING_DIR, 'fm_submission.csv.gz')
 LGBM_SUBMIT = os.path.join(WORKING_DIR, 'lgbm_submission.csv.gz')
+
+USE_PREDTRAINED_FM = False
