@@ -33,6 +33,7 @@ ENCODERS = os.path.join(WORKING_DIR, 'encoders.pkl')
 
 FM_SUBMIT = os.path.join(WORKING_DIR, 'fm_submission.csv.gz')
 LGBM_SUBMIT = os.path.join(WORKING_DIR, 'lgbm_submission.csv.gz')
+BAGGING_SUBMIT = os.path.join(WORKING_DIR, 'bagging_submission.csv.gz')
 
 USE_PREDTRAINED_FM = True
 USE_PREDTRAINED_LGBM = True
