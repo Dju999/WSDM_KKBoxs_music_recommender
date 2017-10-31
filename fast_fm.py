@@ -197,6 +197,7 @@ if __name__ == '__main__':
 
     best_model = None
     if config.USE_PREDTRAINED_FM:
+        logger.info('Загружаем обученную модель...')
         best_model = pickle.load(gzip.open('{}.gz'.format(config.FM_MODEL), 'rb'))
     else:
         rank = [2, 4, 8, 10, 12, 16, 24, 30, 32, 40, 50, 60, 64]

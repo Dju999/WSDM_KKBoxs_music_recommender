@@ -3,6 +3,10 @@
 import sys
 import logging
 import gc
+import pickle
+import gzip
+import shutil
+import os
 
 import numpy as np
 import pandas as pd
@@ -108,9 +112,17 @@ params['num_leaves'] = 2**8
 params['verbosity'] = 0
 params['metric'] = 'auc'
 
-model = lgb.train(
-    params, train_set=d_train, num_boost_round=50, valid_sets=watchlist, verbose_eval=5
-)
+if config.USE_PREDTRAINED_LGBM:
+    model = pickle.load(gzip.open('{}.gz'.format(config.LGBM_MODEL), 'rb'))
+else:
+    model = lgb.train(
+        params, train_set=d_train, num_boost_round=50, valid_sets=watchlist, verbose_eval=5
+    )
+    pickle.dump(model, open(config.LGBM_MODEL, "wb"), protocol=3)
+    with open(config.LGBM_MODEL, 'rb') as f_in, gzip.open('{}.gz'.format(config.LGBM_MODEL), 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+        os.remove(config.LGBM_MODEL)
+
 
 logger.info('Making predictions and saving them...')
 p_test = model.predict(X_test)

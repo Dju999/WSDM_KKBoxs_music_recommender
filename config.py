@@ -25,7 +25,8 @@ VALID_TARGET = os.path.join(WORKING_DIR, 'valid_target.pkl')
 TRAIN_DF_GZ = os.path.join(WORKING_DIR, 'train_df.csv.gz')
 VALID_DF_GZ = os.path.join(WORKING_DIR, 'valid_df.csv.gz')
 
-FM_MODEL = os.path.join(WORKING_DIR, 'fm_best_model.pkl')
+FM_MODEL = os.path.join(WORKING_DIR, 'fm_model.pkl')
+LGBM_MODEL = os.path.join(WORKING_DIR, 'lgbm_model.pkl')
 COL_NAMES = os.path.join(WORKING_DIR, 'col_names.pkl')
 
 ENCODERS = os.path.join(WORKING_DIR, 'encoders.pkl')
@@ -33,4 +34,5 @@ ENCODERS = os.path.join(WORKING_DIR, 'encoders.pkl')
 FM_SUBMIT = os.path.join(WORKING_DIR, 'fm_submission.csv.gz')
 LGBM_SUBMIT = os.path.join(WORKING_DIR, 'lgbm_submission.csv.gz')
 
-USE_PREDTRAINED_FM = False
+USE_PREDTRAINED_FM = True
+USE_PREDTRAINED_LGBM = True
