@@ -20,7 +20,7 @@ def create_encoders(train_df, test_df, col_names):
         encoders.update({
                 '{}'.format(col): 
                 LabelEncoder().fit( 
-                    df[col].fillna('Unknown').unique() 
+                    (df[col].add_categories('Unknown').fillna('Unknown')).unique()
                 )
         }
         )

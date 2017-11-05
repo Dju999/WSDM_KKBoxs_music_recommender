@@ -127,8 +127,8 @@ if __name__ == '__main__':
         train_df = pd.read_csv(config.TRAIN_CSV_GZ, compression='gzip')
         test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip')
         # filling NaN with most frequent value
-        train_df.fillna(value=train_df.mode().iloc[0], inplace=True).isnull().sum(axis=0)
-        test_df.fillna(value=train_df.mode().iloc[0], inplace=True).isnull().sum(axis=0)
+        train_df.fillna(value=train_df.mode().iloc[0], inplace=True)
+        test_df.fillna(value=train_df.mode().iloc[0], inplace=True)
         col_names = np.unique([col for col in train_df.columns.append(test_df.columns) if col not in ('target', 'id')])
         pickle.dump(col_names, open(config.COL_NAMES, "wb"), protocol=3)
 

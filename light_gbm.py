@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import lightgbm as lgb
 
-from utils import isrc_to_year
+from utils import isrc_to_year, create_encoders
 import config
 
 logger = logging.getLogger(__name__)
@@ -23,43 +23,25 @@ logger.addHandler(stream_handler)
 logger.setLevel(logging.INFO)
 
 logger.info('Loading data...')
-data_path = '../input/'
+category_col_names = None
 if config.LOAD_META_DATA:
+    logger.info('Loading preprocessed data...')
     train = pd.read_csv(config.TRAIN_DF_META_GZ, compression='gzip')
     test = pd.read_csv(config.TEST_DF_META_GZ, compression='gzip')
 else:
     train = pd.read_csv(
-        config.TRAIN_CSV_GZ, compression='gzip',
-        dtype={
-            'msno': 'category', 'source_system_tab': 'category',
-            'source_screen_name': 'category', 'source_type': 'category',
-            'target': np.uint8, 'song_id': 'category'
-        }
+        config.TRAIN_CSV_GZ, compression='gzip'
     )
     test = pd.read_csv(
-        config.TEST_CSV_GZ, compression='gzip',
-        dtype={
-            'msno': 'category', 'source_system_tab': 'category',
-            'source_screen_name': 'category', 'source_type': 'category',
-            'song_id': 'category'
-        }
+        config.TEST_CSV_GZ, compression='gzip'
     )
 
     songs = pd.read_csv(
-        config.SONGS_CSV_GZ, compression='gzip',
-        dtype={
-            'genre_ids': 'category', 'language': 'category',
-            'artist_name': 'category', 'composer': 'category',
-            'lyricist': 'category', 'song_id': 'category'
-        }
+        config.SONGS_CSV_GZ, compression='gzip'
     )
 
     members = pd.read_csv(
-        config.MEMBERS_CSV_GZ, compression='gzip',
-        dtype={
-            'city': 'category', 'bd': np.uint8,
-            'gender': 'category', 'registered_via': 'category'
-        }
+        config.MEMBERS_CSV_GZ, compression='gzip'
     )
 
     songs_extra = pd.read_csv(config.SONGS_EXTRA_INFO_CSV_GZ, compression='gzip')
@@ -69,13 +51,13 @@ else:
     train = train.merge(songs[song_cols], on='song_id', how='left')
     test = test.merge(songs[song_cols], on='song_id', how='left')
 
-    members['registration_year'] = members['registration_init_time'].apply(lambda x: int(str(x)[0:4]))
-    members['registration_month'] = members['registration_init_time'].apply(lambda x: int(str(x)[4:6]))
-    members['registration_date'] = members['registration_init_time'].apply(lambda x: int(str(x)[6:8]))
+    members['registration_year'] = members['registration_init_time'].apply(lambda x: int(str(x)[0:4])).astype(np.uint8)
+    members['registration_month'] = members['registration_init_time'].apply(lambda x: int(str(x)[4:6])).astype(np.uint8)
+    members['registration_date'] = members['registration_init_time'].apply(lambda x: int(str(x)[6:8])).astype(np.uint8)
 
-    members['expiration_year'] = members['expiration_date'].apply(lambda x: int(str(x)[0:4]))
-    members['expiration_month'] = members['expiration_date'].apply(lambda x: int(str(x)[4:6]))
-    members['expiration_date'] = members['expiration_date'].apply(lambda x: int(str(x)[6:8]))
+    members['expiration_year'] = members['expiration_date'].apply(lambda x: int(str(x)[0:4])).astype(np.uint8)
+    members['expiration_month'] = members['expiration_date'].apply(lambda x: int(str(x)[4:6])).astype(np.uint8)
+    members['expiration_date'] = members['expiration_date'].apply(lambda x: int(str(x)[6:8])).astype(np.uint8)
     members = members.drop(['registration_init_time'], axis=1)
 
     songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year)
@@ -90,19 +72,28 @@ else:
     del members, songs
     gc.collect()
 
+    category_col_names = []
     for col in train.columns:
         if train[col].dtype == object:
             train[col] = train[col].astype('category')
             test[col] = test[col].astype('category')
+            category_col_names.append(col)
 
-    train.to_csv(config.TRAIN_DF_META_GZ, index=False, compression='gzip', float_format='%.5f')
-    test.to_csv(config.TEST_DF_META_GZ, index=False, compression='gzip', float_format='%.5f')
+    train.to_pickle(config.TRAIN_DF_META_GZ)
+    test.to_pickle(config.TEST_DF_META_GZ)
 
 X = train.drop(['target'], axis=1)
 y = train['target'].values
 
 X_test = test.drop(['id'], axis=1)
 ids = test['id'].values
+
+X.fillna(value=X.mode().iloc[0], inplace=True)
+X_test.fillna(value=X_test.mode().iloc[0], inplace=True)
+column_encoders = create_encoders(X, X_test, category_col_names)
+for col_name in category_col_names:
+    X[col] = column_encoders[col_name].transform(X[col])
+    X_test[col] = column_encoders[col_name].transform(X_test[col])
 
 del train, test
 gc.collect()

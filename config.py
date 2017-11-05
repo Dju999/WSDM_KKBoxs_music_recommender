@@ -1,6 +1,6 @@
 import os
 
-PARENT_DIR = '/home/adzhumurat/Repositories/Research/input/'
+PARENT_DIR = '/home/adzhumurat/Repositories/input/'
 
 WORKING_DIR = os.path.join(PARENT_DIR, 'output')
 
