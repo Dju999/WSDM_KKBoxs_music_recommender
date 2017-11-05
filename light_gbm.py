@@ -24,72 +24,79 @@ logger.setLevel(logging.INFO)
 
 logger.info('Loading data...')
 data_path = '../input/'
-train = pd.read_csv(
-    config.TRAIN_CSV_GZ, compression='gzip',
-    dtype={
-        'msno': 'category', 'source_system_tab': 'category',
-        'source_screen_name': 'category', 'source_type': 'category',
-        'target': np.uint8, 'song_id': 'category'
-    }
-)
-test = pd.read_csv(
-    config.TEST_CSV_GZ, compression='gzip',
-    dtype={
-        'msno': 'category', 'source_system_tab': 'category',
-        'source_screen_name': 'category', 'source_type': 'category',
-        'song_id': 'category'
-    }
-)
+if config.LOAD_META_DATA:
+    train = pd.read_csv(config.TRAIN_DF_META_GZ, compression='gzip')
+    test = pd.read_csv(config.TEST_DF_META_GZ, compression='gzip')
+else:
+    train = pd.read_csv(
+        config.TRAIN_CSV_GZ, compression='gzip',
+        dtype={
+            'msno': 'category', 'source_system_tab': 'category',
+            'source_screen_name': 'category', 'source_type': 'category',
+            'target': np.uint8, 'song_id': 'category'
+        }
+    )
+    test = pd.read_csv(
+        config.TEST_CSV_GZ, compression='gzip',
+        dtype={
+            'msno': 'category', 'source_system_tab': 'category',
+            'source_screen_name': 'category', 'source_type': 'category',
+            'song_id': 'category'
+        }
+    )
 
-songs = pd.read_csv(
-    config.SONGS_CSV_GZ, compression='gzip',
-    dtype={
-        'genre_ids': 'category', 'language': 'category',
-        'artist_name': 'category', 'composer': 'category',
-        'lyricist': 'category', 'song_id': 'category'
-    }
-)
+    songs = pd.read_csv(
+        config.SONGS_CSV_GZ, compression='gzip',
+        dtype={
+            'genre_ids': 'category', 'language': 'category',
+            'artist_name': 'category', 'composer': 'category',
+            'lyricist': 'category', 'song_id': 'category'
+        }
+    )
 
-members = pd.read_csv(
-    config.MEMBERS_CSV_GZ, compression='gzip',
-    dtype={
-        'city': 'category', 'bd': np.uint8,
-        'gender': 'category', 'registered_via': 'category'
-    }
-)
+    members = pd.read_csv(
+        config.MEMBERS_CSV_GZ, compression='gzip',
+        dtype={
+            'city': 'category', 'bd': np.uint8,
+            'gender': 'category', 'registered_via': 'category'
+        }
+    )
 
-songs_extra = pd.read_csv(config.SONGS_EXTRA_INFO_CSV_GZ, compression='gzip')
+    songs_extra = pd.read_csv(config.SONGS_EXTRA_INFO_CSV_GZ, compression='gzip')
 
-logger.info('Data preprocessing...')
-song_cols = ['song_id', 'artist_name', 'genre_ids', 'song_length', 'language']
-train = train.merge(songs[song_cols], on='song_id', how='left')
-test = test.merge(songs[song_cols], on='song_id', how='left')
+    logger.info('Data preprocessing...')
+    song_cols = ['song_id', 'artist_name', 'genre_ids', 'song_length', 'language']
+    train = train.merge(songs[song_cols], on='song_id', how='left')
+    test = test.merge(songs[song_cols], on='song_id', how='left')
 
-members['registration_year'] = members['registration_init_time'].apply(lambda x: int(str(x)[0:4]))
-members['registration_month'] = members['registration_init_time'].apply(lambda x: int(str(x)[4:6]))
-members['registration_date'] = members['registration_init_time'].apply(lambda x: int(str(x)[6:8]))
+    members['registration_year'] = members['registration_init_time'].apply(lambda x: int(str(x)[0:4]))
+    members['registration_month'] = members['registration_init_time'].apply(lambda x: int(str(x)[4:6]))
+    members['registration_date'] = members['registration_init_time'].apply(lambda x: int(str(x)[6:8]))
 
-members['expiration_year'] = members['expiration_date'].apply(lambda x: int(str(x)[0:4]))
-members['expiration_month'] = members['expiration_date'].apply(lambda x: int(str(x)[4:6]))
-members['expiration_date'] = members['expiration_date'].apply(lambda x: int(str(x)[6:8]))
-members = members.drop(['registration_init_time'], axis=1)
-        
-songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year)
-songs_extra.drop(['isrc', 'name'], axis=1, inplace=True)
+    members['expiration_year'] = members['expiration_date'].apply(lambda x: int(str(x)[0:4]))
+    members['expiration_month'] = members['expiration_date'].apply(lambda x: int(str(x)[4:6]))
+    members['expiration_date'] = members['expiration_date'].apply(lambda x: int(str(x)[6:8]))
+    members = members.drop(['registration_init_time'], axis=1)
 
-train = train.merge(members, on='msno', how='left')
-test = test.merge(members, on='msno', how='left')
+    songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year)
+    songs_extra.drop(['isrc', 'name'], axis=1, inplace=True)
 
-train = train.merge(songs_extra, on='song_id', how='left')
-test = test.merge(songs_extra, on='song_id', how='left')
+    train = train.merge(members, on='msno', how='left')
+    test = test.merge(members, on='msno', how='left')
 
-del members, songs
-gc.collect()
+    train = train.merge(songs_extra, on='song_id', how='left')
+    test = test.merge(songs_extra, on='song_id', how='left')
 
-for col in train.columns:
-    if train[col].dtype == object:
-        train[col] = train[col].astype('category')
-        test[col] = test[col].astype('category')
+    del members, songs
+    gc.collect()
+
+    for col in train.columns:
+        if train[col].dtype == object:
+            train[col] = train[col].astype('category')
+            test[col] = test[col].astype('category')
+
+    train.to_csv(config.TRAIN_DF_META_GZ, index=False, compression='gzip', float_format='%.5f')
+    test.to_csv(config.TEST_DF_META_GZ, index=False, compression='gzip', float_format='%.5f')
 
 X = train.drop(['target'], axis=1)
 y = train['target'].values

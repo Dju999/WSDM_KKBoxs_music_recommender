@@ -17,7 +17,7 @@ import gc
 from fastFM import sgd
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, vstack
 from scipy import io
 from sklearn.metrics import roc_auc_score
 
@@ -55,12 +55,7 @@ class DataPreparator(object):
         self.dump()
     
     def train_test_split(self):
-        self.valid_set = user_sampling_from_df(self.data, self.test_set_rate)
-        self.train_set = self.data[
-            np.logical_not(
-                self.data.index.isin(self.valid_set.index)
-            )
-        ]
+        self.valid_set, self.train_set = user_sampling_from_df(self.data, self.test_set_rate, scenario='random')
         logger.info(
             "train set={} rows, test set={} rows ({:.2f}  % from total)".
             format(
@@ -103,12 +98,10 @@ class FeatureEncoder:
     
     def build(self):
         for col_name in self.col_names:
-            # fill missing values
-            non_code_labels = self.df[col_name].fillna('Unknown')
-            col_index = self.encoders[col_name].transform(non_code_labels) + self.shift
+            col_index = self.encoders[col_name].transform(self.df[col_name]) + self.shift
             feature_coded = np.array(list(zip(self.df[self.index_col], col_index)))
             self.sparse_index = np.vstack([self.sparse_index, feature_coded])
-            self.shift += (self.encoders[col_name].transform(non_code_labels).max()+1)
+            self.shift += (self.encoders[col_name].transform(self.df[col_name]).max()+1)
         self.feature_matrix = csr_matrix(
             (np.ones(self.sparse_index.shape[0]).astype(np.int8),
              (self.sparse_index[:, 0], self.sparse_index[:, 1])),
@@ -129,10 +122,13 @@ class FeatureEncoder:
 
 if __name__ == '__main__':
     test_df = None
-    if len(os.listdir(config.WORKING_DIR)) == 0:
+    if len(os.listdir(config.WORKING_DIR)) == 0 or config.TRAIN_TEST_SPLIT:
         logger.info("Loading input train_csv, test_csv...")
         train_df = pd.read_csv(config.TRAIN_CSV_GZ, compression='gzip')
         test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip')
+        # filling NaN with most frequent value
+        train_df.fillna(value=train_df.mode().iloc[0], inplace=True).isnull().sum(axis=0)
+        test_df.fillna(value=train_df.mode().iloc[0], inplace=True).isnull().sum(axis=0)
         col_names = np.unique([col for col in train_df.columns.append(test_df.columns) if col not in ('target', 'id')])
         pickle.dump(col_names, open(config.COL_NAMES, "wb"), protocol=3)
 

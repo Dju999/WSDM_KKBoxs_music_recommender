@@ -1,6 +1,6 @@
 import os
 
-PARENT_DIR = '/home/alex/Загрузки/input/'
+PARENT_DIR = '/home/adzhumurat/Repositories/Research/input/'
 
 WORKING_DIR = os.path.join(PARENT_DIR, 'output')
 
@@ -9,6 +9,9 @@ TEST_CSV_GZ = os.path.join(PARENT_DIR, 'test.csv.gz')
 SONGS_CSV_GZ = os.path.join(PARENT_DIR, 'songs.csv.gz')
 MEMBERS_CSV_GZ = os.path.join(PARENT_DIR, 'members.csv.gz')
 SONGS_EXTRA_INFO_CSV_GZ = os.path.join(PARENT_DIR, 'song_extra_info.csv.gz')
+
+TRAIN_DF_META_GZ = os.path.join(PARENT_DIR, 'train_meta.csv.gz')
+TEST_DF_META_GZ = os.path.join(PARENT_DIR, 'test_meta.csv.gz')
 
 TRAIN_MATRIX = os.path.join(WORKING_DIR, 'train.mtx')
 VALID_MATRIX = os.path.join(WORKING_DIR, 'valid.mtx')
@@ -37,3 +40,5 @@ BAGGING_SUBMIT = os.path.join(WORKING_DIR, 'bagging_submission.csv.gz')
 
 USE_PREDTRAINED_FM = True
 USE_PREDTRAINED_LGBM = True
+TRAIN_TEST_SPLIT = True
+LOAD_META_DATA = False

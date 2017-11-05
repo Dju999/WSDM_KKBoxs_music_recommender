@@ -59,7 +59,7 @@ def random_index_sample(total_rows, row_sample):
     return sample_capacity
 
 
-def user_sampling_from_df(ui_df, user_sample):
+def user_sampling_from_df(ui_df, user_sample, scenario='random'):
     """Random sample of users
     
     filter sourse dataframe rows to select random subsample of users
@@ -68,7 +68,9 @@ def user_sampling_from_df(ui_df, user_sample):
     sample_capacity = random_index_sample(num_rows, user_sample)
     # preserve order of rows after sampling
     # ui_df = ui_df[ui_df[user_col_label].isin(random_index)]
-    return ui_df.sample(sample_capacity, random_state=42)
+    test = ui_df.sample(sample_capacity, random_state=42)
+    inverted_index = test.index.difference(ui_df.index)
+    return test, ui_df.loc[inverted_index]
 
 
 def df2matrix(df, row_label, col_label, feedback_label, shape=None):
