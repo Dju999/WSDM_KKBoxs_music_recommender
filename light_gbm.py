@@ -86,7 +86,8 @@ else:
     members = members.drop(['registration_init_time'], axis=1)
 
     songs_extra.fillna(value=songs_extra.mode().iloc[0], inplace=True)
-    songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year).astype(np.uint16)
+    songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year)
+    songs_extra['song_year'] = songs_extra['song_year'].astype(np.uint16)
     songs_extra.drop(['isrc', 'name'], axis=1, inplace=True)
 
     train = train.merge(members, on='msno', how='left')

@@ -124,8 +124,19 @@ if __name__ == '__main__':
     test_df = None
     if len(os.listdir(config.WORKING_DIR)) == 0 or config.TRAIN_TEST_SPLIT:
         logger.info("Loading input train_csv, test_csv...")
-        train_df = pd.read_csv(config.TRAIN_CSV_GZ, compression='gzip')
-        test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip')
+        if config.LOAD_META_DATA:
+            train_df = pd.read_csv(config.TRAIN_DF_META, compression='gzip')
+            test_df = pd.read_csv(config.TEST_DF_META, compression='gzip')
+            dtype_col = pd.read_pickle(config.META_DTYPES)
+            train_df = train_df.astype(dtype=dtype_col)
+            test_df = test_df.astype(dtype=dtype_col)
+            y = pickle.load(open(config.TARGET_FULL_TRAIN_PKL, "rb"))
+            train_df['target'] = y
+            ids = pickle.load(open(config.IDS_FULL_TRAIN_PKL, "rb"))
+            test_df['id'] = ids
+        else:
+            train_df = pd.read_csv(config.TRAIN_CSV_GZ, compression='gzip')
+            test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip')
         # filling NaN with most frequent value
         train_df.fillna(value=train_df.mode().iloc[0], inplace=True)
         test_df.fillna(value=train_df.mode().iloc[0], inplace=True)
