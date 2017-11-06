@@ -17,7 +17,7 @@ import gc
 from fastFM import sgd
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix, vstack
+from scipy.sparse import csr_matrix
 from scipy import io
 from sklearn.metrics import roc_auc_score
 
@@ -55,7 +55,7 @@ class DataPreparator(object):
         self.dump()
     
     def train_test_split(self):
-        self.valid_set, self.train_set = user_sampling_from_df(self.data, self.test_set_rate, scenario='random')
+        self.valid_set, self.train_set = user_sampling_from_df(self.data, self.test_set_rate)
         logger.info(
             "train set={} rows, test set={} rows ({:.2f}  % from total)".
             format(
