@@ -43,4 +43,4 @@ BAGGING_SUBMIT = os.path.join(WORKING_DIR, 'bagging_submission.csv.gz')
 USE_PREDTRAINED_FM = True
 USE_PREDTRAINED_LGBM = True
 TRAIN_TEST_SPLIT = True
-LOAD_META_DATA = False
+LOAD_META_DATA = True

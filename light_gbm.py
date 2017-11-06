@@ -26,8 +26,12 @@ logger.info('Loading data...')
 category_col_names = []
 if config.LOAD_META_DATA:
     logger.info('Loading preprocessed data...')
-    train = pd.read_csv(config.TRAIN_DF_META, compression='gzip')
-    test = pd.read_csv(config.TEST_DF_META, compression='gzip')
+    X = pd.read_csv(config.TRAIN_DF_META, compression='gzip')
+    X_test = pd.read_csv(config.TEST_DF_META, compression='gzip')
+    dtype_col = pd.read_pickle(config.META_DTYPES)
+    X = X.astype(dtype=dtype_col)
+    X_test = X_test.astype(dtype=dtype_col)
+    y = pickle.load(open(config.TARGET_FULL_TRAIN_PKL, "rb"))
 else:
     train = pd.read_csv(
         config.TRAIN_CSV_GZ, compression='gzip'
@@ -80,7 +84,8 @@ else:
     members['expiration_date'] = members['expiration_date'].apply(lambda x: int(str(x)[6:8])).astype(np.uint8)
     members = members.drop(['registration_init_time'], axis=1)
 
-    songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year)
+    songs_extra.fillna(value=songs_extra.mode().iloc[0], inplace=True)
+    songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year).astype(np.uint16)
     songs_extra.drop(['isrc', 'name'], axis=1, inplace=True)
 
     train = train.merge(members, on='msno', how='left')
@@ -100,32 +105,32 @@ else:
             category_col_names.append(col)
         elif train[col].dtype.name == 'category':
             category_col_names.append(col)
-        else:
-            print(train[col].dtype.name)
-    print("category col names {}".format(category_col_names))
 
-X = train.drop(['target'], axis=1)
-y = train['target'].values
+    X = train.drop(['target'], axis=1)
+    y = train['target'].values
 
-X_test = test.drop(['id'], axis=1)
-ids = test['id'].values
+    X_test = test.drop(['id'], axis=1)
+    ids = test['id'].values
 
-X.fillna(value=X.mode().iloc[0], inplace=True)
-X_test.fillna(value=X_test.mode().iloc[0], inplace=True)
-logger.info("Creating encoders...")
-column_encoders = create_encoders(X, X_test, category_col_names)
-logger.info("Encoding columns...")
-for col in category_col_names:
-    logger.info("Encoding col {}".format(col))
-    X[col].fillna(value=X[col].mode().iloc[0], inplace=True)
-    X[col] = column_encoders[col].transform(X[col])
-    X[col] = X[col].astype('category')
-    X_test[col].fillna(value=X_test[col].mode().iloc[0], inplace=True)
-    X_test[col] = column_encoders[col].transform(X_test[col])
-    X_test[col] = X_test[col].astype('category')
+    X.fillna(value=X.mode().iloc[0], inplace=True)
+    X_test.fillna(value=X_test.mode().iloc[0], inplace=True)
+    logger.info("Creating encoders...")
+    column_encoders = create_encoders(X, X_test, category_col_names)
+    logger.info("Encoding columns...")
+    for col in category_col_names:
+        X[col] = column_encoders[col].transform(X[col])
+        X[col] = X[col].astype('category')
+        X_test[col] = column_encoders[col].transform(X_test[col])
+        X_test[col] = X_test[col].astype('category')
 
-del train, test
-gc.collect()
+    del train, test
+    gc.collect()
+
+    logger.info("Dumping csv...")
+    X.to_csv(config.TRAIN_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
+    X_test.to_csv(config.TEST_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
+    pickle.dump(y, open(config.TARGET_FULL_TRAIN_PKL, "wb"), protocol=3)
+    X.dtypes.to_pickle(config.META_DTYPES)
 
 logger.info("Training model...")
 d_train = lgb.Dataset(X, y)
@@ -150,12 +155,6 @@ else:
     with open(config.LGBM_MODEL, 'rb') as f_in, gzip.open('{}.gz'.format(config.LGBM_MODEL), 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
         os.remove(config.LGBM_MODEL)
-
-logger.info("Dumping csv...")
-X.to_csv(config.TRAIN_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
-X_test.to_csv(config.TEST_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
-pickle.dump(y, open(config.TARGET_FULL_TRAIN_PKL, "wb"), protocol=3)
-X.dtypes.to_pickle(config.META_DTYPES)
 
 logger.info('Making predictions and saving them...')
 p_test = model.predict(X_test)
