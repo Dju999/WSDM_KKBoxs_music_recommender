@@ -26,8 +26,8 @@ logger.info('Loading data...')
 category_col_names = []
 if config.LOAD_META_DATA:
     logger.info('Loading preprocessed data...')
-    train = pd.read_csv(config.TRAIN_DF_META_GZ, compression='gzip')
-    test = pd.read_csv(config.TEST_DF_META_GZ, compression='gzip')
+    train = pd.read_csv(config.TRAIN_DF_META, compression='gzip')
+    test = pd.read_csv(config.TEST_DF_META, compression='gzip')
 else:
     train = pd.read_csv(
         config.TRAIN_CSV_GZ, compression='gzip'
@@ -94,10 +94,15 @@ else:
 
     category_col_names = []
     for col in train.columns:
-        if train[col].dtype == object:
+        if train[col].dtype.name == 'object':
             train[col] = train[col].astype('category')
             test[col] = test[col].astype('category')
             category_col_names.append(col)
+        elif train[col].dtype.name == 'category':
+            category_col_names.append(col)
+        else:
+            print(train[col].dtype.name)
+    print("category col names {}".format(category_col_names))
 
 X = train.drop(['target'], axis=1)
 y = train['target'].values
@@ -111,6 +116,7 @@ logger.info("Creating encoders...")
 column_encoders = create_encoders(X, X_test, category_col_names)
 logger.info("Encoding columns...")
 for col in category_col_names:
+    logger.info("Encoding col {}".format(col))
     X[col].fillna(value=X[col].mode().iloc[0], inplace=True)
     X[col] = column_encoders[col].transform(X[col])
     X[col] = X[col].astype('category')
