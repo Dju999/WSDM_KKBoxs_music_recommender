@@ -75,11 +75,11 @@ else:
     train = train.merge(songs[song_cols], on='song_id', how='left')
     test = test.merge(songs[song_cols], on='song_id', how='left')
 
-    members['registration_year'] = members['registration_init_time'].apply(lambda x: int(str(x)[0:4])).astype(np.uint8)
+    members['registration_year'] = members['registration_init_time'].apply(lambda x: int(str(x)[0:4])).astype(np.uint16)
     members['registration_month'] = members['registration_init_time'].apply(lambda x: int(str(x)[4:6])).astype(np.uint8)
     members['registration_date'] = members['registration_init_time'].apply(lambda x: int(str(x)[6:8])).astype(np.uint8)
 
-    members['expiration_year'] = members['expiration_date'].apply(lambda x: int(str(x)[0:4])).astype(np.uint8)
+    members['expiration_year'] = members['expiration_date'].apply(lambda x: int(str(x)[0:4])).astype(np.uint16)
     members['expiration_month'] = members['expiration_date'].apply(lambda x: int(str(x)[4:6])).astype(np.uint8)
     members['expiration_date'] = members['expiration_date'].apply(lambda x: int(str(x)[6:8])).astype(np.uint8)
     members = members.drop(['registration_init_time'], axis=1)
