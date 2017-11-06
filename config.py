@@ -13,6 +13,7 @@ SONGS_EXTRA_INFO_CSV_GZ = os.path.join(PARENT_DIR, 'song_extra_info.csv.gz')
 TRAIN_DF_META = os.path.join(WORKING_DIR, 'train_meta.csv.gz')
 TEST_DF_META = os.path.join(WORKING_DIR, 'test_meta.csv.gz')
 TARGET_FULL_TRAIN_PKL = os.path.join(WORKING_DIR, 'target_full_train.pkl')
+IDS_FULL_TRAIN_PKL = os.path.join(WORKING_DIR, 'ids_full_train.pkl')
 META_DTYPES = os.path.join(WORKING_DIR, 'meta_dtypes.pkl')
 
 TRAIN_MATRIX = os.path.join(WORKING_DIR, 'train.mtx')
@@ -43,4 +44,4 @@ BAGGING_SUBMIT = os.path.join(WORKING_DIR, 'bagging_submission.csv.gz')
 USE_PREDTRAINED_FM = True
 USE_PREDTRAINED_LGBM = True
 TRAIN_TEST_SPLIT = True
-LOAD_META_DATA = True
+LOAD_META_DATA = False

@@ -32,6 +32,7 @@ if config.LOAD_META_DATA:
     X = X.astype(dtype=dtype_col)
     X_test = X_test.astype(dtype=dtype_col)
     y = pickle.load(open(config.TARGET_FULL_TRAIN_PKL, "rb"))
+    ids = pickle.load(open(config.IDS_FULL_TRAIN_PKL, "rb"))
 else:
     train = pd.read_csv(
         config.TRAIN_CSV_GZ, compression='gzip'
@@ -130,9 +131,9 @@ else:
     X.to_csv(config.TRAIN_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
     X_test.to_csv(config.TEST_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
     pickle.dump(y, open(config.TARGET_FULL_TRAIN_PKL, "wb"), protocol=3)
+    pickle.dump(ids, open(config.IDS_FULL_TRAIN_PKL, "wb"), protocol=3)
     X.dtypes.to_pickle(config.META_DTYPES)
 
-logger.info("Training model...")
 d_train = lgb.Dataset(X, y)
 watchlist = [d_train]
 
