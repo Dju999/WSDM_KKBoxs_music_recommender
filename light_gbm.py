@@ -23,7 +23,7 @@ logger.addHandler(stream_handler)
 logger.setLevel(logging.INFO)
 
 logger.info('Loading data...')
-category_col_names = None
+category_col_names = []
 if config.LOAD_META_DATA:
     logger.info('Loading preprocessed data...')
     train = pd.read_csv(config.TRAIN_DF_META_GZ, compression='gzip')
@@ -32,17 +32,37 @@ else:
     train = pd.read_csv(
         config.TRAIN_CSV_GZ, compression='gzip'
     )
+    train = train.astype(dtype={
+        'msno': 'category', 'source_system_tab': 'category',
+        'source_screen_name': 'category', 'source_type': 'category',
+        'target': np.uint8, 'song_id': 'category'
+    })
+
     test = pd.read_csv(
         config.TEST_CSV_GZ, compression='gzip'
     )
+    test = test.astype(dtype={
+        'msno': 'category', 'source_system_tab': 'category',
+        'source_screen_name': 'category', 'source_type': 'category',
+        'song_id': 'category'
+    })
 
     songs = pd.read_csv(
         config.SONGS_CSV_GZ, compression='gzip'
     )
+    songs = songs.astype(dtype={
+        'genre_ids': 'category', 'language': 'category',
+        'artist_name': 'category', 'composer': 'category',
+        'lyricist': 'category', 'song_id': 'category'
+    })
 
     members = pd.read_csv(
         config.MEMBERS_CSV_GZ, compression='gzip'
     )
+    members = members.astype(dtype={
+        'city': 'category', 'bd': np.uint8,
+        'gender': 'category', 'registered_via': 'category'
+    })
 
     songs_extra = pd.read_csv(config.SONGS_EXTRA_INFO_CSV_GZ, compression='gzip')
 
@@ -79,9 +99,6 @@ else:
             test[col] = test[col].astype('category')
             category_col_names.append(col)
 
-    train.to_pickle(config.TRAIN_DF_META_GZ)
-    test.to_pickle(config.TEST_DF_META_GZ)
-
 X = train.drop(['target'], axis=1)
 y = train['target'].values
 
@@ -90,14 +107,21 @@ ids = test['id'].values
 
 X.fillna(value=X.mode().iloc[0], inplace=True)
 X_test.fillna(value=X_test.mode().iloc[0], inplace=True)
+logger.info("Creating encoders...")
 column_encoders = create_encoders(X, X_test, category_col_names)
-for col_name in category_col_names:
-    X[col] = column_encoders[col_name].transform(X[col])
-    X_test[col] = column_encoders[col_name].transform(X_test[col])
+logger.info("Encoding columns...")
+for col in category_col_names:
+    X[col].fillna(value=X[col].mode().iloc[0], inplace=True)
+    X[col] = column_encoders[col].transform(X[col])
+    X[col] = X[col].astype('category')
+    X_test[col].fillna(value=X_test[col].mode().iloc[0], inplace=True)
+    X_test[col] = column_encoders[col].transform(X_test[col])
+    X_test[col] = X_test[col].astype('category')
 
 del train, test
 gc.collect()
 
+logger.info("Training model...")
 d_train = lgb.Dataset(X, y)
 watchlist = [d_train]
 
@@ -121,6 +145,11 @@ else:
         shutil.copyfileobj(f_in, f_out)
         os.remove(config.LGBM_MODEL)
 
+logger.info("Dumping csv...")
+X.to_csv(config.TRAIN_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
+X_test.to_csv(config.TEST_DF_META, index=False, float_format='%.5f', encoding='utf-8', compression='gzip')
+pickle.dump(y, open(config.TARGET_FULL_TRAIN_PKL, "wb"), protocol=3)
+X.dtypes.to_pickle(config.META_DTYPES)
 
 logger.info('Making predictions and saving them...')
 p_test = model.predict(X_test)

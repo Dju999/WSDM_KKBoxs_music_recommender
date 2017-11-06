@@ -10,8 +10,10 @@ SONGS_CSV_GZ = os.path.join(PARENT_DIR, 'songs.csv.gz')
 MEMBERS_CSV_GZ = os.path.join(PARENT_DIR, 'members.csv.gz')
 SONGS_EXTRA_INFO_CSV_GZ = os.path.join(PARENT_DIR, 'song_extra_info.csv.gz')
 
-TRAIN_DF_META_GZ = os.path.join(PARENT_DIR, 'train_meta.csv.gz')
-TEST_DF_META_GZ = os.path.join(PARENT_DIR, 'test_meta.csv.gz')
+TRAIN_DF_META = os.path.join(WORKING_DIR, 'train_meta.csv.gz')
+TEST_DF_META = os.path.join(WORKING_DIR, 'test_meta.csv.gz')
+TARGET_FULL_TRAIN_PKL = os.path.join(WORKING_DIR, 'target_full_train.pkl')
+META_DTYPES = os.path.join(WORKING_DIR, 'meta_dtypes.pkl')
 
 TRAIN_MATRIX = os.path.join(WORKING_DIR, 'train.mtx')
 VALID_MATRIX = os.path.join(WORKING_DIR, 'valid.mtx')

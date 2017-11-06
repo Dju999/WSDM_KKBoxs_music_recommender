@@ -17,10 +17,12 @@ def create_encoders(train_df, test_df, col_names):
     num_cols = 0
     encoders = {}
     for col in col_names:
+        df[col].fillna(value=df[col].mode().iloc[0], inplace=True)
+        df[col] = df[col].astype('category')
         encoders.update({
                 '{}'.format(col): 
                 LabelEncoder().fit( 
-                    (df[col].add_categories('Unknown').fillna('Unknown')).unique()
+                    df[col]
                 )
         }
         )
@@ -59,7 +61,7 @@ def random_index_sample(total_rows, row_sample):
     return sample_capacity
 
 
-def user_sampling_from_df(ui_df, user_sample, scenario='random'):
+def user_sampling_from_df(ui_df, user_sample):
     """Random sample of users
     
     filter sourse dataframe rows to select random subsample of users
