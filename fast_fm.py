@@ -89,7 +89,7 @@ class FeatureEncoder:
         self.shift = 0
         self.col_names = column_names
         self.encoders = label_encoders
-        self.sparse_index = np.array([[], []]).reshape(0, 2)
+        self.sparse_index = np.array([[], []]).astype(np.uint32).astype(np.uint32).reshape(0, 2)
         self.num_cols = label_encoders['num_cols']
         self.index_col = index_col
         self.feature_matrix = None
@@ -100,8 +100,8 @@ class FeatureEncoder:
     def build(self):
         for col_name in self.col_names:
             col_index = self.encoders[col_name].transform(self.df[col_name]) + self.shift
-            feature_coded = np.array(list(zip(self.df[self.index_col], col_index)))
-            self.sparse_index = np.vstack([self.sparse_index, feature_coded])
+            feature_coded = np.array(list(zip(self.df[self.index_col], col_index))).astype(np.uint32)
+            self.sparse_index = np.vstack([self.sparse_index, feature_coded]).astype(np.uint32)
             self.shift += (self.encoders[col_name].transform(self.df[col_name]).max()+1)
         self.feature_matrix = csr_matrix(
             (np.ones(self.sparse_index.shape[0]).astype(np.int8),
