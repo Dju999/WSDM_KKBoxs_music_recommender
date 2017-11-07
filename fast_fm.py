@@ -101,11 +101,14 @@ class FeatureEncoder:
         for col_name in self.col_names:
             col_index = self.encoders[col_name].transform(self.df[col_name]) + self.shift
             feature_coded = np.array(list(zip(self.df[self.index_col], col_index))).astype(np.uint32)
+            gc.collect()
             self.sparse_index = np.vstack([self.sparse_index, feature_coded]).astype(np.uint32)
+            del feature_coded
             self.shift += (self.encoders[col_name].transform(self.df[col_name]).max()+1)
+        logger.info("Creating sparse matrix shape = {}x{}".format(self.row_num, self.num_cols))
         self.feature_matrix = csr_matrix(
             (np.ones(self.sparse_index.shape[0]).astype(np.int8),
-             (self.sparse_index[:, 0], self.sparse_index[:, 1])),
+             (self.sparse_index[:, 0].astype(np.uint32), self.sparse_index[:, 1].astype(np.uint32))),
             shape=(self.row_num, self.num_cols)
         ).tocoo(copy=False).astype(np.int8)
         del self.sparse_index
@@ -128,6 +131,8 @@ if __name__ == '__main__':
         if config.LOAD_META_DATA:
             train_df = pd.read_csv(config.TRAIN_DF_META, compression='gzip')
             test_df = pd.read_csv(config.TEST_DF_META, compression='gzip')
+            train_df = train_df.drop(['song_length'], axis=1)
+            test_df = test_df.drop(['song_length'], axis=1)
             dtype_col = pd.read_pickle(config.META_DTYPES)
             train_df = train_df.astype(dtype=dtype_col)
             test_df = test_df.astype(dtype=dtype_col)
@@ -135,6 +140,8 @@ if __name__ == '__main__':
             train_df['target'] = y
             ids = pickle.load(open(config.IDS_FULL_TRAIN_PKL, "rb"))
             test_df['id'] = ids
+            del y, ids
+            gc.collect()
         else:
             train_df = pd.read_csv(config.TRAIN_CSV_GZ, compression='gzip')
             test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip')
