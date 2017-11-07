@@ -52,7 +52,8 @@ class DataPreparator(object):
         """
         self.train_test_split()
         self.reindex_df()
-        self.dump()
+        if config.DUMP_TRAIN_DATA:
+            self.dump()
     
     def train_test_split(self):
         self.valid_set, self.train_set = user_sampling_from_df(self.data, self.test_set_rate)
@@ -180,7 +181,7 @@ if __name__ == '__main__':
             else (config.TRAIN_MATRIX_META, config.VALID_MATRIX_META)
         feature_coded_train = FeatureEncoder(
             data_preparator.train_set, col_names, encoders,
-            matrix_name=TRAIN_MATRIX, dump_name=TRAIN_MATRIX_GZ
+            matrix_name=TRAIN_MATRIX, dump_name=TRAIN_MATRIX_GZ, is_dump=config.DUMP_TRAIN_DATA
         )
         feature_coded_train.build()
         train_matrix = feature_coded_train.feature_matrix
@@ -188,7 +189,7 @@ if __name__ == '__main__':
         logger.info("Encoding valid data...")
         feature_coded_valid = FeatureEncoder(
             data_preparator.valid_set, col_names, encoders,
-            matrix_name=VALID_MATRIX, dump_name=VALID_MATRIX_GZ
+            matrix_name=VALID_MATRIX, dump_name=VALID_MATRIX_GZ, is_dump=config.DUMP_TRAIN_DATA
         )
         feature_coded_valid.build()
         valid_matrix = feature_coded_valid.feature_matrix
@@ -254,13 +255,13 @@ if __name__ == '__main__':
     logger.info('Building test set...')
     test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip') if test_df is None else test_df
     test_data = FeatureEncoder(
-        test_df, col_names, encoders, index_col='id', is_dump=False
+        test_df, col_names, encoders, index_col='id', is_dump=config.DUMP_TRAIN_DATA
     )
     test_data.build()
 
     logger.info('Fitting model on whole dataset (train+valid)...')
     union_data = vstack([train_matrix, valid_matrix], format='coo', dtype=np.int8)
-    union_target = np.append(y_train, y_valid).astype(np.uint8)
+    union_target = np.append(y_train, y_valid).astype(np.int8)
     del train_matrix, valid_matrix
     gc.collect()
     best_model.fit(union_data, union_target)
