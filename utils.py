@@ -71,7 +71,7 @@ def user_sampling_from_df(ui_df, user_sample):
     # preserve order of rows after sampling
     # ui_df = ui_df[ui_df[user_col_label].isin(random_index)]
     test = ui_df.sample(sample_capacity, random_state=42)
-    inverted_index = test.index.difference(ui_df.index)
+    inverted_index = ui_df.index.difference(test.index)
     return test, ui_df.loc[inverted_index]
 
 

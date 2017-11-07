@@ -56,6 +56,7 @@ class DataPreparator(object):
     
     def train_test_split(self):
         self.valid_set, self.train_set = user_sampling_from_df(self.data, self.test_set_rate)
+        print(self.valid_set.shape, self.train_set.shape)
         logger.info(
             "train set={} rows, test set={} rows ({:.2f}  % from total)".
             format(
