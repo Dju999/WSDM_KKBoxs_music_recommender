@@ -131,11 +131,11 @@ if __name__ == '__main__':
         if config.LOAD_META_DATA:
             train_df = pd.read_csv(config.TRAIN_DF_META, compression='gzip')
             test_df = pd.read_csv(config.TEST_DF_META, compression='gzip')
-            train_df = train_df.drop(['song_length'], axis=1)
-            test_df = test_df.drop(['song_length'], axis=1)
             dtype_col = pd.read_pickle(config.META_DTYPES)
             train_df = train_df.astype(dtype=dtype_col)
             test_df = test_df.astype(dtype=dtype_col)
+            train_df = train_df.drop(['song_length'], axis=1)
+            test_df = test_df.drop(['song_length'], axis=1)
             y = pickle.load(open(config.TARGET_FULL_TRAIN_PKL, "rb"))
             train_df['target'] = y
             ids = pickle.load(open(config.IDS_FULL_TRAIN_PKL, "rb"))
