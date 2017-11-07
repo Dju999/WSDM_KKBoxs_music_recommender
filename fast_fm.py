@@ -119,8 +119,8 @@ class FeatureEncoder:
     def dump(self):
         logger.info("Dumping matrix {}...".format(self.dump_name))
         io.mmwrite(self.matrix_name, self.feature_matrix)
-        with open(self.matrix_name, 'rb') as f_in, gzip.open(self.dump_name, 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
+        with open(self.matrix_name, 'rb') as in_stream, gzip.open(self.dump_name, 'wb') as out_stream:
+            shutil.copyfileobj(in_stream, out_stream)
             os.remove(self.matrix_name)
 
 
@@ -171,17 +171,9 @@ if __name__ == '__main__':
         data_preparator.prepare_data()
 
         logger.info("Feature columns for encoding: {} \nEncoding train data...".format(col_names))
-        (TRAIN_MATRIX_GZ, VALID_MATRIX_GZ) = \
-            (config.TRAIN_MATRIX_GZ, config.VALID_MATRIX_GZ) \
-            if config.LOAD_META_DATA \
-            else (config.TRAIN_MATRIX_META_GZ, config.VALID_MATRIX_META_GZ)
-        (TRAIN_MATRIX, VALID_MATRIX) = \
-            (config.TRAIN_MATRIX, config.VALID_MATRIX) \
-            if config.LOAD_META_DATA \
-            else (config.TRAIN_MATRIX_META, config.VALID_MATRIX_META)
         feature_coded_train = FeatureEncoder(
             data_preparator.train_set, col_names, encoders,
-            matrix_name=TRAIN_MATRIX, dump_name=TRAIN_MATRIX_GZ, is_dump=config.DUMP_TRAIN_DATA
+            matrix_name=config.TRAIN_MATRIX, dump_name=config.TRAIN_MATRIX_GZ, is_dump=config.DUMP_TRAIN_DATA
         )
         feature_coded_train.build()
         train_matrix = feature_coded_train.feature_matrix
@@ -189,7 +181,7 @@ if __name__ == '__main__':
         logger.info("Encoding valid data...")
         feature_coded_valid = FeatureEncoder(
             data_preparator.valid_set, col_names, encoders,
-            matrix_name=VALID_MATRIX, dump_name=VALID_MATRIX_GZ, is_dump=config.DUMP_TRAIN_DATA
+            matrix_name=config.VALID_MATRIX, dump_name=config.VALID_MATRIX_GZ, is_dump=config.DUMP_TRAIN_DATA
         )
         feature_coded_valid.build()
         valid_matrix = feature_coded_valid.feature_matrix
@@ -201,14 +193,10 @@ if __name__ == '__main__':
         logger.info('Загружаем test_df и train_df...')
         train_df = pd.read_csv(config.TRAIN_DF_GZ, compression='gzip')
         valid_df = pd.read_csv(config.VALID_DF_GZ, compression='gzip')
-        (TRAIN_MATRIX_GZ, VALID_MATRIX_GZ) = \
-            (config.TRAIN_MATRIX_GZ, config.VALID_MATRIX_GZ) \
-            if config.LOAD_META_DATA \
-            else (config.TRAIN_MATRIX_META_GZ, config.VALID_MATRIX_META_GZ)
         logger.info('Загружаем матрицу test...')
-        valid_matrix = io.mmread(gzip.open(VALID_MATRIX_GZ, 'rb'))
+        valid_matrix = io.mmread(gzip.open(config.VALID_MATRIX_GZ, 'rb'))
         logger.info('Загружаем матрицу train...')
-        train_matrix = io.mmread(gzip.open(TRAIN_MATRIX_GZ, 'rb'))
+        train_matrix = io.mmread(gzip.open(config.TRAIN_MATRIX_GZ, 'rb'))
         train_target_values = pickle.load(open(config.TRAIN_TARGET, 'rb'))
         valid_target_values = pickle.load(open(config.VALID_TARGET, 'rb'))
         col_names = pickle.load(open(config.COL_NAMES, 'rb'))

@@ -11,6 +11,8 @@ from sklearn.preprocessing import LabelEncoder
 import numpy as np
 from scipy.sparse import csr_matrix
 
+import config
+
 
 def create_encoders(train_df, test_df, col_names):
     df = pd.concat([train_df, test_df])
@@ -66,11 +68,12 @@ def user_sampling_from_df(ui_df, user_sample):
     
     filter sourse dataframe rows to select random subsample of users
     """
-    num_rows = ui_df.shape[0]
-    sample_capacity = random_index_sample(num_rows, user_sample)
-    # preserve order of rows after sampling
-    # ui_df = ui_df[ui_df[user_col_label].isin(random_index)]
-    test = ui_df.sample(sample_capacity, random_state=42)
+    if config.LEAK_EXPLOITATION:
+        test = ui_df.iloc[-2500000:]
+    else:
+        num_rows = ui_df.shape[0]
+        sample_capacity = random_index_sample(num_rows, user_sample)
+        test = ui_df.sample(sample_capacity, random_state=42)
     inverted_index = ui_df.index.difference(test.index)
     return test, ui_df.loc[inverted_index]
 
