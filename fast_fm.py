@@ -17,7 +17,7 @@ import gc
 from fastFM import sgd
 import numpy as np
 import pandas as pd
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, vstack
 from scipy import io
 from sklearn.metrics import roc_auc_score
 
@@ -56,7 +56,6 @@ class DataPreparator(object):
     
     def train_test_split(self):
         self.valid_set, self.train_set = user_sampling_from_df(self.data, self.test_set_rate)
-        print(self.valid_set.shape, self.train_set.shape)
         logger.info(
             "train set={} rows, test set={} rows ({:.2f}  % from total)".
             format(
@@ -171,9 +170,17 @@ if __name__ == '__main__':
         data_preparator.prepare_data()
 
         logger.info("Feature columns for encoding: {} \nEncoding train data...".format(col_names))
+        (TRAIN_MATRIX_GZ, VALID_MATRIX_GZ) = \
+            (config.TRAIN_MATRIX_GZ, config.VALID_MATRIX_GZ) \
+            if config.LOAD_META_DATA \
+            else (config.TRAIN_MATRIX_META_GZ, config.VALID_MATRIX_META_GZ)
+        (TRAIN_MATRIX, VALID_MATRIX) = \
+            (config.TRAIN_MATRIX, config.VALID_MATRIX) \
+            if config.LOAD_META_DATA \
+            else (config.TRAIN_MATRIX_META, config.VALID_MATRIX_META)
         feature_coded_train = FeatureEncoder(
             data_preparator.train_set, col_names, encoders,
-            matrix_name=config.TRAIN_MATRIX, dump_name=config.TRAIN_MATRIX_GZ
+            matrix_name=TRAIN_MATRIX, dump_name=TRAIN_MATRIX_GZ
         )
         feature_coded_train.build()
         train_matrix = feature_coded_train.feature_matrix
@@ -181,7 +188,7 @@ if __name__ == '__main__':
         logger.info("Encoding valid data...")
         feature_coded_valid = FeatureEncoder(
             data_preparator.valid_set, col_names, encoders,
-            matrix_name=config.VALID_MATRIX, dump_name=config.VALID_MATRIX_GZ
+            matrix_name=VALID_MATRIX, dump_name=VALID_MATRIX_GZ
         )
         feature_coded_valid.build()
         valid_matrix = feature_coded_valid.feature_matrix
@@ -193,10 +200,14 @@ if __name__ == '__main__':
         logger.info('Загружаем test_df и train_df...')
         train_df = pd.read_csv(config.TRAIN_DF_GZ, compression='gzip')
         valid_df = pd.read_csv(config.VALID_DF_GZ, compression='gzip')
+        (TRAIN_MATRIX_GZ, VALID_MATRIX_GZ) = \
+            (config.TRAIN_MATRIX_GZ, config.VALID_MATRIX_GZ) \
+            if config.LOAD_META_DATA \
+            else (config.TRAIN_MATRIX_META_GZ, config.VALID_MATRIX_META_GZ)
         logger.info('Загружаем матрицу test...')
-        valid_matrix = io.mmread(gzip.open(config.VALID_MATRIX_GZ, 'rb'))
+        valid_matrix = io.mmread(gzip.open(VALID_MATRIX_GZ, 'rb'))
         logger.info('Загружаем матрицу train...')
-        train_matrix = io.mmread(gzip.open(config.TRAIN_MATRIX_GZ, 'rb'))
+        train_matrix = io.mmread(gzip.open(TRAIN_MATRIX_GZ, 'rb'))
         train_target_values = pickle.load(open(config.TRAIN_TARGET, 'rb'))
         valid_target_values = pickle.load(open(config.VALID_TARGET, 'rb'))
         col_names = pickle.load(open(config.COL_NAMES, 'rb'))
@@ -209,6 +220,8 @@ if __name__ == '__main__':
     )
 
     y_train = np.array([-1 if i == 0 else 1 for i in train_target_values])
+    y_valid = np.array([-1 if i == 0 else 1 for i in valid_target_values])
+    y_hat = None
 
     best_model = None
     if config.USE_PREDTRAINED_FM:
@@ -230,6 +243,7 @@ if __name__ == '__main__':
             best_model = model if score > best_score else best_model
 
             logger.info("r={}\tROC AUC = {}".format(r, score))
+        print(y_valid, y_hat)
 
         logger.info('Сохраняем обученную модель (лучшую)...')
         pickle.dump(best_model, open(config.FM_MODEL, "wb"), protocol=3)
@@ -244,6 +258,12 @@ if __name__ == '__main__':
     )
     test_data.build()
 
+    logger.info('Fitting model on whole dataset (train+valid)...')
+    union_data = vstack([train_matrix, valid_matrix], format='coo', dtype=np.int8)
+    union_target = np.append(y_train, y_valid).astype(np.uint8)
+    del train_matrix, valid_matrix
+    gc.collect()
+    best_model.fit(union_data, union_target)
     logger.info('Making predictions...')
     y_predict = best_model.predict_proba(test_data.feature_matrix)
     result = pd.DataFrame({'id': test_df.id.values, 'target': y_predict})

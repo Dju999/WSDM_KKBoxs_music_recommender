@@ -1,6 +1,6 @@
 import os
 
-PARENT_DIR = '/home/adzhumurat/Repositories/input/'
+PARENT_DIR = '/home/alex/input/'
 
 WORKING_DIR = os.path.join(PARENT_DIR, 'output')
 
@@ -18,9 +18,13 @@ META_DTYPES = os.path.join(WORKING_DIR, 'meta_dtypes.pkl')
 
 TRAIN_MATRIX = os.path.join(WORKING_DIR, 'train.mtx')
 VALID_MATRIX = os.path.join(WORKING_DIR, 'valid.mtx')
+TRAIN_MATRIX_META = os.path.join(WORKING_DIR, 'train_meta.mtx')
+VALID_MATRIX_META = os.path.join(WORKING_DIR, 'valid_meta.mtx')
 
 TRAIN_MATRIX_GZ = '{}.gz'.format(TRAIN_MATRIX)
 VALID_MATRIX_GZ = '{}.gz'.format(VALID_MATRIX)
+TRAIN_MATRIX_META_GZ = '{}.gz'.format(TRAIN_MATRIX_META)
+VALID_MATRIX_META_GZ = '{}.gz'.format(VALID_MATRIX_META)
 
 TRAIN_DF = os.path.join(WORKING_DIR, 'train_df.csv')
 VALID_DF = os.path.join(WORKING_DIR, 'valid_df.csv')
@@ -41,7 +45,7 @@ FM_SUBMIT = os.path.join(WORKING_DIR, 'fm_submission.csv.gz')
 LGBM_SUBMIT = os.path.join(WORKING_DIR, 'lgbm_submission.csv.gz')
 BAGGING_SUBMIT = os.path.join(WORKING_DIR, 'bagging_submission.csv.gz')
 
-USE_PREDTRAINED_FM = True
-USE_PREDTRAINED_LGBM = True
+USE_PREDTRAINED_FM = False
+USE_PREDTRAINED_LGBM = False
 TRAIN_TEST_SPLIT = True
 LOAD_META_DATA = True
