@@ -243,7 +243,7 @@ if __name__ == '__main__':
     logger.info('Building test set...')
     test_df = pd.read_csv(config.TEST_CSV_GZ, compression='gzip') if test_df is None else test_df
     test_data = FeatureEncoder(
-        test_df, col_names, encoders, index_col='id', is_dump=config.DUMP_TRAIN_DATA
+        test_df, col_names, encoders, index_col='id', is_dump=False
     )
     test_data.build()
 
