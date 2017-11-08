@@ -97,7 +97,7 @@ class FeatureEncoder:
         self.matrix_name = matrix_name
         self.is_dump = is_dump
     
-    def build(self):
+    def build(self, verbose=True):
         for col_name in self.col_names:
             col_index = self.encoders[col_name].transform(self.df[col_name]) + self.shift
             feature_coded = np.array(list(zip(self.df[self.index_col], col_index))).astype(np.uint32)
@@ -105,7 +105,8 @@ class FeatureEncoder:
             self.sparse_index = np.vstack([self.sparse_index, feature_coded]).astype(np.uint32)
             del feature_coded
             self.shift += (self.encoders[col_name].transform(self.df[col_name]).max()+1)
-        logger.info("Creating sparse matrix shape = {}x{}".format(self.row_num, self.num_cols))
+        if verbose:
+            logger.info("Creating sparse matrix shape = {}x{}".format(self.row_num, self.num_cols))
         self.feature_matrix = csr_matrix(
             (np.ones(self.sparse_index.shape[0]).astype(np.int8),
              (self.sparse_index[:, 0].astype(np.uint32), self.sparse_index[:, 1].astype(np.uint32))),
@@ -114,10 +115,11 @@ class FeatureEncoder:
         del self.sparse_index
         gc.collect()
         if self.is_dump:
-            self.dump()
+            self.dump(verbose)
 
-    def dump(self):
-        logger.info("Dumping matrix {}...".format(self.dump_name))
+    def dump(self, verbose):
+        if verbose:
+            logger.info("Dumping matrix {}...".format(self.dump_name))
         io.mmwrite(self.matrix_name, self.feature_matrix)
         with open(self.matrix_name, 'rb') as in_stream, gzip.open(self.dump_name, 'wb') as out_stream:
             shutil.copyfileobj(in_stream, out_stream)
