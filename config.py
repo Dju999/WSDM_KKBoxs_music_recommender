@@ -65,3 +65,11 @@ LEAK_EXPLOITATION = True
     (TRAIN_MATRIX, VALID_MATRIX) \
     if LOAD_META_DATA \
     else (TRAIN_MATRIX_META, VALID_MATRIX_META)
+
+USE_OFFLINE_PARAMETERS_ESTIMATION = True
+OFFLINE_PARAMS = {
+    'feature_space': [
+        'msno', 'song_id', 'source_screen_name', 'source_system_tab', 'expiration_year', 'gender', 'expiration_date'
+    ],
+    'rank': 25,
+}

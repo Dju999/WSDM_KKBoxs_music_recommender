@@ -102,13 +102,13 @@ if __name__ == '__main__':
                 best_features_list = np.append(best_features_list, current_best_feature)
                 # удаляем эту фичу из списка кандидатов
                 current_candidates = np.setdiff1d(col_names, best_features_list)
-                # обновляем скор
-                global_best_score = current_best_score
                 # логируем информацию
                 logger.info(
                     "r={}\tROC AUC={:.4f}\tgain={:.4f}\tfeature_to_add={}"
                     .format(r, current_best_score, current_best_score - global_best_score, current_best_feature)
                 )
+                # обновляем скор
+                global_best_score = current_best_score
             else:
                 logger.info('Набрали фичей: {} для ранга {} . Скор {}'
                             .format(','.join(best_features_list), r, global_best_score)

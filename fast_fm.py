@@ -215,7 +215,14 @@ if __name__ == '__main__':
     y_hat = None
 
     best_model = None
-    if config.USE_PREDTRAINED_FM:
+    if config.USE_OFFLINE_PARAMETERS_ESTIMATION:
+        logger.info('Загружаем параметры из конфига...')
+        best_model = sgd.FMClassification(
+                n_iter=1000, init_stdev=0.1, l2_reg_w=0,
+                l2_reg_V=0, rank=config.OFFLINE_PARAMS['rank'], step_size=0.1, random_state=42
+        )
+        col_names = config.OFFLINE_PARAMS['feature_space']
+    elif config.USE_PREDTRAINED_FM:
         logger.info('Загружаем обученную модель...')
         best_model = pickle.load(gzip.open('{}.gz'.format(config.FM_MODEL), 'rb'))
     else:
