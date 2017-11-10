@@ -5,6 +5,8 @@
 Работа с pandas.DataFrame и разреженными матрицами
 """
 import gc
+import logging
+import sys
 
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -12,6 +14,14 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import config
+
+
+logger = logging.getLogger(__name__)
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+stream_handler.setLevel(logging.INFO)
+logger.addHandler(stream_handler)
+logger.setLevel(logging.INFO)
 
 
 def data_frame_normalize(df, index_col_name, sep, col_list):
@@ -23,23 +33,41 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
     :param col_list: columns for separation
     :return: result_df - flattened DataFrame
     """
-    invariant_labels = np.setdiff1d(songs_df.columns.values, ['artist_name', 'composer', 'lyricist']+[index_col_name])
-    result_df = df[invariant_labels]
+    encoders = dict()
+    invariant_labels = np.setdiff1d(df.columns.values, col_list+[index_col_name])
+    for col_name in np.append(invariant_labels, index_col_name):
+        df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
+        logger.info("Encodind col {}".format(col_name))
+        encoders.update({col_name: LabelEncoder().fit(df[col_name])})
+        df[col_name] = encoders[col_name].transform(df[col_name])
+        df[col_name] = df[col_name].astype(np.uint16)
+    result_df = df[np.append(index_col_name, invariant_labels)]
+    print(result_df.head(10))
 
     for col_name in col_list:
-        normalized_col = pd.DataFrame(
+        logger.info("Filling NA's in col {}".format(col_name))
+        df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
+        df[col_name] = df[col_name].astype('category')
+        df[col_name] = LabelEncoder().fit_transform(df[col_name])
+        logger.info("Processing col {}".format(col_name))
+        current_df = pd.DataFrame(
             np.vstack(df[[index_col_name, col_name]].apply(
                 lambda row: [
                     (row[0], item)
-                    for item in row[1].split(sep)
+                    for item in str(row[1]).split(sep)
                 ],
                 axis=1
             ).values),
             columns=[index_col_name, col_name]
         )
-
-        result_df = result_df.merge(normalized_col, on=index_col_name)
-        del normalized_col
+        logger.info('Encoding new col ...')
+        print(current_df.head(10))
+        current_df[col_name] = current_df[col_name].astype('category')
+        current_df[col_name].fillna(current_df[col_name].mode().values[0], inplace=True)
+        current_encoder = LabelEncoder().fit(current_df[col_name])
+        current_df[col_name] = current_encoder.transform(current_df[col_name])
+        current_df[col_name] = current_df[col_name].astype(np.uint16)
+        result_df = result_df.merge(current_df, on=index_col_name)
         gc.collect()
 
     return result_df
