@@ -40,7 +40,7 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
         logger.info("Encodind col {}".format(col_name))
         encoders.update({col_name: LabelEncoder().fit(df[col_name])})
         df[col_name] = encoders[col_name].transform(df[col_name])
-        df[col_name] = df[col_name].astype(np.uint16)
+        df[col_name] = df[col_name].astype(np.uint32)
     result_df = df[np.append(index_col_name, invariant_labels)]
     print(result_df.head(10))
 
@@ -49,7 +49,7 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
         df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
         df[col_name] = df[col_name].astype('category')
         df[col_name] = LabelEncoder().fit_transform(df[col_name])
-        df[col_name] = df[col_name].astype(np.uint16)
+        df[col_name] = df[col_name].astype(np.uint32)
         logger.info("Processing col {}".format(col_name))
         current_df = pd.DataFrame(
             np.vstack(df[[index_col_name, col_name]].apply(
@@ -61,14 +61,18 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
             ).values),
             columns=[index_col_name, col_name]
         )
+        current_df[index_col_name] = current_df[index_col_name].astype(np.uint32)
         logger.info('Encoding new col ...')
         print(current_df.head(10))
         current_df[col_name] = current_df[col_name].astype('category')
         current_df[col_name].fillna(current_df[col_name].mode().values[0], inplace=True)
         current_encoder = LabelEncoder().fit(current_df[col_name])
         current_df[col_name] = current_encoder.transform(current_df[col_name])
-        current_df[col_name] = current_df[col_name].astype(np.uint16)
+        current_df[col_name] = current_df[col_name].astype(np.uint32)
+        print(result_df.head(1))
         result_df = result_df.merge(current_df, on=index_col_name)
+        print(result_df.head(3))
+        print(current_df.head(3))
         gc.collect()
 
     return result_df
