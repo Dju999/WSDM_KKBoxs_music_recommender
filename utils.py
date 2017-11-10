@@ -49,6 +49,7 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
         df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
         df[col_name] = df[col_name].astype('category')
         df[col_name] = LabelEncoder().fit_transform(df[col_name])
+        df[col_name] = df[col_name].astype(np.uint16)
         logger.info("Processing col {}".format(col_name))
         current_df = pd.DataFrame(
             np.vstack(df[[index_col_name, col_name]].apply(
