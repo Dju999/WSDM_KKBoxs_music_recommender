@@ -14,6 +14,37 @@ from scipy.sparse import csr_matrix
 import config
 
 
+def data_frame_normalize(df, index_col_name, sep, col_list):
+    """ Transform nested fields to flat
+
+    :param df: source df
+    :param index_col_name: primary DataFrame key
+    :param sep: nested field separator
+    :param col_list: columns for separation
+    :return: result_df - flattened DataFrame
+    """
+    invariant_labels = np.setdiff1d(songs_df.columns.values, ['artist_name', 'composer', 'lyricist']+[index_col_name])
+    result_df = df[invariant_labels]
+
+    for col_name in col_list:
+        normalized_col = pd.DataFrame(
+            np.vstack(df[[index_col_name, col_name]].apply(
+                lambda row: [
+                    (row[0], item)
+                    for item in row[1].split(sep)
+                ],
+                axis=1
+            ).values),
+            columns=[index_col_name, col_name]
+        )
+
+        result_df = result_df.merge(normalized_col, on=index_col_name)
+        del normalized_col
+        gc.collect()
+
+    return result_df
+
+
 def create_encoders(train_df, test_df, col_names):
     df = pd.concat([train_df, test_df])
     num_cols = 0
