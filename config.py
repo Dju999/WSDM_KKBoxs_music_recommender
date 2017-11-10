@@ -45,13 +45,16 @@ FM_SUBMIT = os.path.join(WORKING_DIR, 'fm_submission.csv.gz')
 LGBM_SUBMIT = os.path.join(WORKING_DIR, 'lgbm_submission.csv.gz')
 BAGGING_SUBMIT = os.path.join(WORKING_DIR, 'bagging_submission.csv.gz')
 
+
+FEATURE_SELECTION_LOG = os.path.join(WORKING_DIR, 'feature_selection_log.csv')
+
 USE_PREDTRAINED_FM = False
 USE_PREDTRAINED_LGBM = False
 TRAIN_TEST_SPLIT = True
 LOAD_META_DATA = True
-DUMP_TRAIN_DATA = True
+DUMP_TRAIN_DATA = False
 
-LEAK_EXPLOITATION = False
+LEAK_EXPLOITATION = True
 
 (TRAIN_MATRIX_GZ, VALID_MATRIX_GZ) = \
     (TRAIN_MATRIX_GZ, VALID_MATRIX_GZ) \
