@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 
 import config
-from utils import data_frame_normalize, isrc_to_year
+from utils import data_frame_normalize, isrc_to_year, user_sampling_from_df
 
 
 logger = logging.getLogger(__name__)
@@ -131,6 +131,7 @@ if __name__ == '__main__':
     )
 
     logger.info('Data encoding finished! Adding meta-data...')
+    pickle.dump(config.encoders, open(config.ENCODERS, "wb"), protocol=3)
 
     train_normalized = train_normalized.merge(songs_normalized, on='song_id', how='inner')
     test_normalized = test_normalized.merge(songs_normalized, on='song_id', how='inner')
@@ -140,6 +141,8 @@ if __name__ == '__main__':
 
     train_normalized = train_normalized.merge(songs_extra, on='song_id', how='left')
     test_normalized = test_normalized.merge(songs_extra, on='song_id', how='left')
+
+    valid_df, train_df = user_sampling_from_df(self.data, self.test_set_rate)
 
     test_normalized.to_csv(
         config.ENCODED_TEST_CSV_GZ, index=False, float_format='%.5f', encoding='utf-8', compression='gzip'
