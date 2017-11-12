@@ -1,6 +1,6 @@
 import os
 
-PARENT_DIR = '/home/alex/input/'
+PARENT_DIR = '/home/adzhumurat/Repositories/input'
 
 WORKING_DIR = os.path.join(PARENT_DIR, 'output')
 
@@ -9,6 +9,12 @@ TEST_CSV_GZ = os.path.join(PARENT_DIR, 'test.csv.gz')
 SONGS_CSV_GZ = os.path.join(PARENT_DIR, 'songs.csv.gz')
 MEMBERS_CSV_GZ = os.path.join(PARENT_DIR, 'members.csv.gz')
 SONGS_EXTRA_INFO_CSV_GZ = os.path.join(PARENT_DIR, 'song_extra_info.csv.gz')
+#
+ENCODED_TRAIN_CSV_GZ = os.path.join(WORKING_DIR, 'train.csv.gz')
+ENCODED_TEST_CSV_GZ = os.path.join(WORKING_DIR, 'test.csv.gz')
+ENCODED_SONGS_CSV_GZ = os.path.join(WORKING_DIR, 'songs.csv.gz')
+ENCODED_MEMBERS_CSV_GZ = os.path.join(WORKING_DIR, 'members.csv.gz')
+ENCODED_SONGS_EXTRA_INFO_CSV_GZ = os.path.join(WORKING_DIR, 'song_extra_info.csv.gz')
 
 TRAIN_DF_META = os.path.join(WORKING_DIR, 'train_meta.csv.gz')
 TEST_DF_META = os.path.join(WORKING_DIR, 'test_meta.csv.gz')
@@ -78,3 +84,6 @@ OFFLINE_PARAMS = {
     ],
     'rank': 25,
 }
+
+# encoders for categorical data
+encoders = dict()

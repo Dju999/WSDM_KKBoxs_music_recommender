@@ -7,6 +7,7 @@
 import gc
 import logging
 import sys
+from collections import defaultdict
 
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -33,46 +34,64 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
     :param col_list: columns for separation
     :return: result_df - flattened DataFrame
     """
-    encoders = dict()
     invariant_labels = np.setdiff1d(df.columns.values, col_list+[index_col_name])
     for col_name in np.append(invariant_labels, index_col_name):
-        df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
-        logger.info("Encodind col {}".format(col_name))
-        encoders.update({col_name: LabelEncoder().fit(df[col_name])})
-        df[col_name] = encoders[col_name].transform(df[col_name])
-        df[col_name] = df[col_name].astype(np.uint32)
-    result_df = df[np.append(index_col_name, invariant_labels)]
-    print(result_df.head(10))
+        if df[col_name].dtype.name == 'category' or df[col_name].dtype.name == 'object':
+            df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
+            if col_name not in config.encoders.keys():
+                config.encoders.update({col_name: LabelEncoder().fit(df[col_name])})
+                logger.info("Encodind col {}".format(col_name))
+            else:
+                logger.info('Use pre-trained encoder for {}'.format(col_name))
+            df[col_name] = config.encoders[col_name].transform(df[col_name])
+            df[col_name] = df[col_name].astype(np.uint32)
+
+    base_col_list = np.append(invariant_labels, index_col_name)
+    if len(col_list) == 0:
+        return df[base_col_list]
+    result_df = df[base_col_list]
+
+    df.drop(invariant_labels, axis=1, inplace=True)
+    gc.collect()
 
     for col_name in col_list:
-        logger.info("Filling NA's in col {}".format(col_name))
         df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
-        df[col_name] = df[col_name].astype('category')
-        df[col_name] = LabelEncoder().fit_transform(df[col_name])
-        df[col_name] = df[col_name].astype(np.uint32)
-        logger.info("Processing col {}".format(col_name))
-        current_df = pd.DataFrame(
-            np.vstack(df[[index_col_name, col_name]].apply(
+        column_categories = set()
+        df[col_name].apply(lambda row: column_categories.update(str(row).split(sep)))
+        column_categories = np.array(list(column_categories))#.astype('<U50')
+        logger.info('Categories in col "{}": {}'.format(col_name, column_categories.shape[0]))
+
+        if col_name not in config.encoders.keys():
+            logger.info("Creating encoder for col {}".format(col_name))
+            config.encoders.update({col_name: LabelEncoder().fit(column_categories)})
+            del column_categories
+            gc.collect()
+        else:
+            logger.info("Use predrained encoder for col {}".format(col_name))
+
+        logger.info('Generate matrix entries...')
+        entries = df[[index_col_name, col_name]].apply(
                 lambda row: [
-                    (row[0], item)
-                    for item in str(row[1]).split(sep)
+                    np.array([row[0], item]).astype(np.uint16)
+                    for item in (config.encoders[col_name].transform(
+                        np.array(str(row[1]).split(sep))#.astype('<U50')
+                    )).astype(np.uint16)
                 ],
                 axis=1
-            ).values),
-            columns=[index_col_name, col_name]
-        )
+        ).apply(np.array).values
+
+        logger.info('Combine entries to DataFrame...')
+        current_df = pd.DataFrame(np.concatenate(entries), columns=[index_col_name, col_name])
+
+        df.drop(col_name, axis=1, inplace=True)
+        gc.collect()
+
+        logger.info("Flattened col {} finished!".format(col_name))
         current_df[index_col_name] = current_df[index_col_name].astype(np.uint32)
-        logger.info('Encoding new col ...')
-        print(current_df.head(10))
-        current_df[col_name] = current_df[col_name].astype('category')
-        current_df[col_name].fillna(current_df[col_name].mode().values[0], inplace=True)
-        current_encoder = LabelEncoder().fit(current_df[col_name])
-        current_df[col_name] = current_encoder.transform(current_df[col_name])
         current_df[col_name] = current_df[col_name].astype(np.uint32)
-        print(result_df.head(1))
         result_df = result_df.merge(current_df, on=index_col_name)
-        print(result_df.head(3))
-        print(current_df.head(3))
+
+        del current_df
         gc.collect()
 
     return result_df
