@@ -19,7 +19,8 @@ stream_handler.setLevel(logging.INFO)
 logger.addHandler(stream_handler)
 logger.setLevel(logging.INFO)
 
-if __name__ == '__main__':
+
+def preprocess_csv():
 
     train = pd.read_csv(
         config.TRAIN_CSV_GZ, compression='gzip'
@@ -43,6 +44,7 @@ if __name__ == '__main__':
     union_df = pd.concat([train[union_cols], test[union_cols]]).drop_duplicates()
     song_catalog = union_df[['song_id']].drop_duplicates().copy()
     msno_catalog = union_df[['msno']].drop_duplicates().copy()
+
     logger.info('Train user-item encoders...')
     data_frame_normalize(
         union_df, index_col_name='msno', sep='|',
@@ -50,6 +52,8 @@ if __name__ == '__main__':
     )
     del union_df
     gc.collect()
+
+    valid, train = user_sampling_from_df(train, config.TEST_SET_SAMPLE)
 
     songs = pd.read_csv(
         config.SONGS_CSV_GZ, compression='gzip'
@@ -125,6 +129,11 @@ if __name__ == '__main__':
         col_list=[]
     )
 
+    valid_normalized = data_frame_normalize(
+        valid, index_col_name='msno', sep='|',
+        col_list=[]
+    )
+
     test_normalized = data_frame_normalize(
         test, index_col_name='msno', sep='|',
         col_list=[]
@@ -134,26 +143,36 @@ if __name__ == '__main__':
     pickle.dump(config.encoders, open(config.ENCODERS, "wb"), protocol=3)
 
     train_normalized = train_normalized.merge(songs_normalized, on='song_id', how='inner')
+    valid_normalized = valid_normalized.merge(songs_normalized, on='song_id', how='inner')
     test_normalized = test_normalized.merge(songs_normalized, on='song_id', how='inner')
 
     train_normalized = train_normalized.merge(members_normalized, on='msno')
+    valid_normalized = valid_normalized.merge(members_normalized, on='msno')
     test_normalized = test_normalized.merge(members_normalized, on='msno')
 
     train_normalized = train_normalized.merge(songs_extra, on='song_id', how='left')
+    valid_normalized = valid_normalized.merge(songs_extra, on='song_id', how='left')
     test_normalized = test_normalized.merge(songs_extra, on='song_id', how='left')
-
-    valid_df, train_df = user_sampling_from_df(self.data, self.test_set_rate)
 
     test_normalized.to_csv(
         config.ENCODED_TEST_CSV_GZ, index=False, float_format='%.5f', encoding='utf-8', compression='gzip'
+    )
+
+    valid_normalized.to_csv(
+        config.ENCODED_VALID_CSV_GZ, index=False, float_format='%.5f', encoding='utf-8', compression='gzip'
     )
 
     train_normalized.to_csv(
         config.ENCODED_TRAIN_CSV_GZ, index=False, float_format='%.5f', encoding='utf-8', compression='gzip'
     )
 
-    print(train_normalized.head(10))
+    print('train set {}'.format(train_normalized.shape))
+    print('train set {}'.format(valid_normalized.shape))
+    print('test set {}'.format(test_normalized.shape))
+    print(valid_normalized.head(3))
     del members, songs, songs_extra, members_normalized, songs_normalized, train, test
     gc.collect()
+    pickle.dump(config.encoders, open(config.ENCODERS, "wb"), protocol=3)
 
-
+if __name__ == '__main__':
+    preprocess_csv()

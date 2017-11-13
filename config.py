@@ -1,6 +1,6 @@
 import os
 
-PARENT_DIR = '/home/adzhumurat/Repositories/input'
+PARENT_DIR = '/home/alex/input'
 
 WORKING_DIR = os.path.join(PARENT_DIR, 'output')
 
@@ -11,6 +11,7 @@ MEMBERS_CSV_GZ = os.path.join(PARENT_DIR, 'members.csv.gz')
 SONGS_EXTRA_INFO_CSV_GZ = os.path.join(PARENT_DIR, 'song_extra_info.csv.gz')
 #
 ENCODED_TRAIN_CSV_GZ = os.path.join(WORKING_DIR, 'train.csv.gz')
+ENCODED_VALID_CSV_GZ = os.path.join(WORKING_DIR, 'valid.csv.gz')
 ENCODED_TEST_CSV_GZ = os.path.join(WORKING_DIR, 'test.csv.gz')
 ENCODED_SONGS_CSV_GZ = os.path.join(WORKING_DIR, 'songs.csv.gz')
 ENCODED_MEMBERS_CSV_GZ = os.path.join(WORKING_DIR, 'members.csv.gz')
@@ -87,3 +88,5 @@ OFFLINE_PARAMS = {
 
 # encoders for categorical data
 encoders = dict()
+
+TEST_SET_SAMPLE = 0.2

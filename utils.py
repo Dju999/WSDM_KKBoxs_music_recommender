@@ -58,7 +58,7 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
         df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
         column_categories = set()
         df[col_name].apply(lambda row: column_categories.update(str(row).split(sep)))
-        column_categories = np.array(list(column_categories))#.astype('<U50')
+        column_categories = np.array(list(column_categories))  # .astype('<U50') # in case of long string value
         logger.info('Categories in col "{}": {}'.format(col_name, column_categories.shape[0]))
 
         if col_name not in config.encoders.keys():
@@ -74,7 +74,7 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
                 lambda row: [
                     np.array([row[0], item]).astype(np.uint16)
                     for item in (config.encoders[col_name].transform(
-                        np.array(str(row[1]).split(sep))#.astype('<U50')
+                        np.array(str(row[1]).split(sep))  # .astype('<U50') # in case of long string value
                     )).astype(np.uint16)
                 ],
                 axis=1
