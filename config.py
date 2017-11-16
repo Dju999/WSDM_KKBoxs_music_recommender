@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 PARENT_DIR = '/home/alex/input'
 
@@ -78,7 +79,7 @@ LEAK_EXPLOITATION = True
     if LOAD_META_DATA \
     else (TRAIN_MATRIX_META, VALID_MATRIX_META)
 
-USE_OFFLINE_PARAMETERS_ESTIMATION = True
+USE_OFFLINE_PARAMETERS_ESTIMATION = False
 OFFLINE_PARAMS = {
     'feature_space': [
         'msno', 'song_id', 'source_screen_name', 'source_system_tab', 'expiration_year', 'gender', 'expiration_date'
@@ -90,3 +91,26 @@ OFFLINE_PARAMS = {
 encoders = dict()
 
 TEST_SET_SAMPLE = 0.2
+
+train_dtypes = {
+        'row_index': np.int32,
+        'song_id': np.int32,
+        'source_screen_name': np.int8,
+        'source_system_tab': np.int8,
+        'source_type': np.int8,
+        'target': np.int8,
+        'msno': np.int32,
+        'language': np.int32,
+        'genre_ids': np.int32,
+        'bd': np.int32,
+        'city': np.int8,
+        'expiration_date': np.int8,
+        'expiration_month': np.int8,
+        'expiration_year': np.int8,
+        'registered_via': np.int8,
+        'registration_date': np.int8,
+        'registration_month': np.int8,
+        'registration_year': np.int8,
+        'gender': np.int8,
+        'song_year': np.float64
+}

@@ -82,12 +82,12 @@ class DataPreparator(object):
 class FeatureEncoder:
     def __init__(
             self, df, column_names, label_encoders,
-            index_col='row_index', matrix_name=None, dump_name=None, is_dump=True
+            index_col='row_index', matrix_name=None, dump_name=None, is_dump=False
     ):
-        self.df = df
+        self.df = df.drop_duplicates()
         self.row_num = df.shape[0]
         self.shift = 0
-        self.col_names = column_names
+        self.col_names = np.setdiff1d(column_names, np.array(['row_index']))
         self.encoders = label_encoders
         self.sparse_index = np.array([[], []]).astype(np.uint32).astype(np.uint32).reshape(0, 2)
         self.num_cols = label_encoders['num_cols']
@@ -97,28 +97,34 @@ class FeatureEncoder:
         self.matrix_name = matrix_name
         self.is_dump = is_dump
     
-    def build(self, transform=False, verbose=True):
+    def build(self, transform=True, verbose=True):
         for col_name in self.col_names:
             if transform:
                 col_index = self.encoders[col_name].transform(self.df[col_name]) + self.shift
             else:
-                col_index = self.encoders[col_name] + self.shift
+                num_categories = self.df[col_name].max()
+                col_index = self.df[col_name] + self.shift
+
             feature_coded = np.array(list(zip(self.df[self.index_col].values, col_index))).astype(np.uint32)
             gc.collect()
             self.sparse_index = np.vstack([self.sparse_index, feature_coded]).astype(np.uint32)
             del feature_coded
-            self.shift += (self.encoders[col_name].classes_.shape[0]+1)
+            if col_name in self.encoders.keys():
+                self.shift += (self.encoders[col_name].classes_.shape[0]+1)
+            else:
+                self.shift += num_categories+1
         if verbose:
             logger.info("Creating sparse matrix shape = {}x{}".format(self.row_num, self.num_cols))
         self.feature_matrix = csr_matrix(
-            (np.ones(self.sparse_index.shape[0]).astype(np.int8),
-             (self.sparse_index[:, 0].astype(np.uint32), self.sparse_index[:, 1].astype(np.uint32))),
-            shape=(self.row_num, self.num_cols)
+                    (np.ones(self.sparse_index.shape[0]).astype(np.int8),
+                     (self.sparse_index[:, 0].astype(np.uint32), self.sparse_index[:, 1].astype(np.uint32))),
+                    shape=(self.row_num, self.num_cols)
         ).tocoo(copy=False).astype(np.int8)
         del self.sparse_index
         gc.collect()
         if self.is_dump:
             self.dump(verbose)
+        return self
 
     def dump(self, verbose):
         if verbose:

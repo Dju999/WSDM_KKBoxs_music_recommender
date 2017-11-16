@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 
 import config
-from utils import data_frame_normalize, isrc_to_year, user_sampling_from_df
+from utils import data_frame_normalize, isrc_to_year, user_sampling_from_df, reindex_df
 
 
 logger = logging.getLogger(__name__)
@@ -54,21 +54,38 @@ def preprocess_csv():
     gc.collect()
 
     valid, train = user_sampling_from_df(train, config.TEST_SET_SAMPLE)
+    valid = reindex_df(valid)
+    train = reindex_df(train)
+    test = reindex_df(test)
 
     songs = pd.read_csv(
         config.SONGS_CSV_GZ, compression='gzip'
     )
-    songs[['language', 'song_length']] = songs[['language', 'song_length']].fillna('-1')
+    songs[['language', 'song_length']] = songs[['language', 'song_length']].fillna(0)
     songs = songs[['song_id', 'song_length', 'genre_ids', 'language']]
     songs = songs.astype(dtype={
-        'genre_ids': 'category', 'language': np.uint8,
+        'genre_ids': 'category', 'language': 'category',
         'song_id': 'category', 'song_length': np.uint16
     })
     songs_cols = songs.columns
     num_rows = songs.shape[0]
     songs = songs.merge(song_catalog, on='song_id', how='inner')[songs_cols].drop_duplicates()
+    songs = songs.astype(dtype={
+        'genre_ids': 'category', 'language': 'category',
+        'song_id': 'category', 'song_length': np.uint16
+    })
+    print(songs.dtypes)
     logger.info('Songs delta filtering: {} before, {} after'.format(num_rows, songs.shape[0]))
 
+    fill_values = dict(zip(songs.columns, songs.mode().values[0]))
+    print(fill_values)
+    songs = songs.fillna(fill_values)
+    songs = songs.astype({
+        'song_id': 'object',
+        'song_length': np.float32,
+        'genre_ids': 'category',
+        'language': 'category'
+    })
     songs_normalized = data_frame_normalize(
         songs, index_col_name='song_id', sep='|',
         col_list=['genre_ids']
@@ -81,9 +98,12 @@ def preprocess_csv():
         config.MEMBERS_CSV_GZ, compression='gzip'
     )
     members = members.astype(dtype={
-        'city': 'category', 'bd': np.uint8,
+        'city': 'category', 'bd': 'category',
         'gender': 'category', 'registered_via': 'category'
     })
+    fill_values = dict(zip(members.columns, members.mode().values[0]))
+    print(fill_values)
+    members = members.fillna(fill_values)
     members_cols = members.columns
     num_rows = members.shape[0]
     members = members.merge(msno_catalog, on='msno', how='inner')[members_cols].drop_duplicates()
@@ -97,6 +117,19 @@ def preprocess_csv():
     members['expiration_date'] = members['expiration_date'].apply(lambda x: int(str(x)[6:8])).astype(np.uint8)
     members = members.drop(['registration_init_time'], axis=1)
 
+    members = members.astype({
+        'msno': 'category',
+        'city': 'category',
+        'bd': 'category',
+        'gender': 'category',
+        'registered_via': 'category',
+        'expiration_date': 'category',
+        'registration_year': 'category',
+        'registration_month': 'category',
+        'registration_date': 'category',
+        'expiration_year': 'category',
+        'expiration_month': 'category'
+    })
     logger.info('Members delta filtering: {} before, {} after'.format(num_rows, members.shape[0]))
     members_normalized = data_frame_normalize(
         members, index_col_name='msno', sep='|',
@@ -117,10 +150,13 @@ def preprocess_csv():
     songs_extra.fillna(value=songs_extra.mode().iloc[0], inplace=True)
 
     songs_extra['song_year'] = songs_extra['isrc'].apply(isrc_to_year)
-    songs_extra['song_year'] = songs_extra['song_year'].astype(np.uint16)
+    songs_extra['song_year'] = (songs_extra['song_year'].fillna(0).astype(np.uint8)).astype('category')
     songs_extra['song_id'] = songs_extra['song_id'].astype('category')
-    songs_extra['song_id'] = config.encoders['song_id'].transform(songs_extra['song_id'])
     songs_extra.drop(['isrc', 'name'], axis=1, inplace=True)
+    songs_extra_normalized = data_frame_normalize(
+        songs_extra, index_col_name='song_id', sep='|',
+        col_list=[]
+    )
 
     context_columns = ['source_system_tab', 'source_screen_name', 'source_type']
 
@@ -150,9 +186,9 @@ def preprocess_csv():
     valid_normalized = valid_normalized.merge(members_normalized, on='msno')
     test_normalized = test_normalized.merge(members_normalized, on='msno')
 
-    train_normalized = train_normalized.merge(songs_extra, on='song_id', how='left')
-    valid_normalized = valid_normalized.merge(songs_extra, on='song_id', how='left')
-    test_normalized = test_normalized.merge(songs_extra, on='song_id', how='left')
+    train_normalized = train_normalized.merge(songs_extra_normalized, on='song_id', how='left')
+    valid_normalized = valid_normalized.merge(songs_extra_normalized, on='song_id', how='left')
+    test_normalized = test_normalized.merge(songs_extra_normalized, on='song_id', how='left')
 
     test_normalized.to_csv(
         config.ENCODED_TEST_CSV_GZ, index=False, float_format='%.5f', encoding='utf-8', compression='gzip'
@@ -166,12 +202,19 @@ def preprocess_csv():
         config.ENCODED_TRAIN_CSV_GZ, index=False, float_format='%.5f', encoding='utf-8', compression='gzip'
     )
 
+    test_normalized.dtypes.to_pickle(config.META_DTYPES)
+
     print('train set {}'.format(train_normalized.shape))
     print('train set {}'.format(valid_normalized.shape))
     print('test set {}'.format(test_normalized.shape))
-    print(valid_normalized.head(3))
+    print(valid_normalized.head(1))
+    print(test_normalized.head(1))
     del members, songs, songs_extra, members_normalized, songs_normalized, train, test
     gc.collect()
+    config.encoders.update({
+        'num_cols': sum([j.classes_.shape[0] for i, j in config.encoders.items()])
+    })
+    print(config.encoders)
     pickle.dump(config.encoders, open(config.ENCODERS, "wb"), protocol=3)
 
 if __name__ == '__main__':

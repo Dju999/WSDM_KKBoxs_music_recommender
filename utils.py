@@ -37,6 +37,7 @@ def data_frame_normalize(df, index_col_name, sep, col_list):
     invariant_labels = np.setdiff1d(df.columns.values, col_list+[index_col_name])
     for col_name in np.append(invariant_labels, index_col_name):
         if df[col_name].dtype.name == 'category' or df[col_name].dtype.name == 'object':
+            print(col_name)
             df[col_name].fillna(df[col_name].mode().values[0], inplace=True)
             if col_name not in config.encoders.keys():
                 config.encoders.update({col_name: LabelEncoder().fit(df[col_name])})
@@ -182,8 +183,8 @@ def df2matrix(df, row_label, col_label, feedback_label, shape=None):
 def isrc_to_year(isrc):
     if type(isrc) == str:
         if int(isrc[5:7]) > 17:
-            return 1900 + int(isrc[5:7])
+            return int(1900 + int(isrc[5:7]))
         else:
-            return 2000 + int(isrc[5:7])
+            return int(2000 + int(isrc[5:7]))
     else:
-        return np.nan
+        return int(2000)
